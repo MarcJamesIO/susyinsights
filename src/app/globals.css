@@ -1,0 +1,103 @@
+/* stylelint-disable-next-line */
+@tailwind base;
+/* stylelint-disable-next-line */
+@tailwind components;
+/* stylelint-disable-next-line */
+@tailwind utilities;
+
+@font-face {
+  font-family: "SusyFont";
+  src: url("/fonts/RedHatText-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "SusyFontBold";
+  src: url("/fonts/RedHatText-Bold.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+html {
+  /* width: 100vw; */
+  box-sizing: border-box;
+}
+
+body {
+  color: white;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.text-RedHatText {
+  font-family: "RedHatText";
+}
+
+.mapboxgl-ctrl-attrib-inner {
+  display: none;
+}
+
+.table-container {
+  overflow-x: auto; /* Enables horizontal scrolling */
+}
+
+.scrollbar-rounded {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 114, 128, 1) rgba(229, 231, 235, 1); /* Thumb and track color */
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.scrollbar-rounded::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-rounded::-webkit-scrollbar-thumb {
+  background-color: rgba(
+    107,
+    114,
+    128,
+    1
+  ); /* Equivalent to Tailwind's gray-400 */
+  border-radius: 10px; /* Rounded thumb */
+  border: 2px solid transparent; /* Space around thumb */
+  background-clip: content-box; /* Ensures border radius is respected */
+}
+
+.scrollbar-rounded::-webkit-scrollbar-track {
+  background-color: rgba(
+    229,
+    231,
+    235,
+    1
+  ); /* Equivalent to Tailwind's gray-200 */
+  border-radius: 10px; /* Rounded track edges */
+  margin: 4px; /* Reduces the size of the track */
+}
+@layer utilities {
+  .scrollbar::-webkit-scrollbar {
+    width: 20px;
+    height: 20px;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: #ffffff;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    background: #e0cbcb;
+    border-radius: 100vh;
+    border: 3px solid #f6f7ed;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #c0a0b9;
+  }
+}
