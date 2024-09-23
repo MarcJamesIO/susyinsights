@@ -8,8 +8,10 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState("susyinsights");
-  const [password, setPassword] = useState("Susy-Insights#2024");
+  // const [username, setUsername] = useState("susyinsights");
+  // const [password, setPassword] = useState("Susy-Insights#2024");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleFormSubmit = async (event: React.FormEvent) => {

@@ -14,6 +14,7 @@ export default function Home() {
   const [showSingleList, setShowSingleList] = useState(false);
   const [loadingText, setLoadingText] = useState("Connecting to SuSy Database");
   const [firstLoadCount, setFirstLoadCount] = useState<number>(0);
+
   useEffect(() => {
     if (showLoading) {
       document.body.style.overflow = "hidden";
