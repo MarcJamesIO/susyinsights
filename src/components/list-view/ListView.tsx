@@ -3,6 +3,8 @@ import { FiDownload } from "react-icons/fi";
 import { BiSortAlt2 } from "react-icons/bi";
 import { FiChevronsLeft, FiChevronsRight } from "react-icons/fi";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FaPen } from "react-icons/fa";
+
 interface ListItem {
   address: string;
   postcode: string;
@@ -34,6 +36,10 @@ const ListView: React.FC<SelectedListProps> = ({
     direction: "ascending" | "descending";
   } | null>(null);
   const [searchInput, setSearchInput] = useState<string>("");
+
+  // New state variables
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
   const sortList = (key: keyof ListItem) => {
     let direction: "ascending" | "descending" = "ascending";
@@ -153,6 +159,27 @@ const ListView: React.FC<SelectedListProps> = ({
     return Math.round(value).toLocaleString();
   };
 
+  // Handle checkbox change
+  const handleCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    address: string
+  ) => {
+    setCheckedItems((prevState) => {
+      const newCheckedItems = new Set(prevState);
+      if (e.target.checked) {
+        newCheckedItems.add(address);
+      } else {
+        newCheckedItems.delete(address);
+      }
+      return newCheckedItems;
+    });
+  };
+
+  // Get selected items
+  const selectedItems = useMemo(() => {
+    return listData.filter((item) => checkedItems.has(item.address));
+  }, [checkedItems, listData]);
+
   return (
     <div className="pb-60">
       <div className="text-susyNavy font-light">
@@ -184,11 +211,35 @@ const ListView: React.FC<SelectedListProps> = ({
         </div>
         <div className="text-black flex flex-row ">
           <button
-            onClick={downloadCSV}
-            className=" px-4 py-3 flex flew-row justify-center items-center bg-susyPink hover:bg-susyLightPink rounded-md text-susyNavy relative"
+            onClick={() => setIsEditing(!isEditing)}
+            className=" px-4 py-3 flex flew-row justify-center items-center bg-white border-susyPink border-2 mr-4 hover:bg-gray-100 rounded-md text-susyNavy relative"
           >
-            <FiDownload className="inline-block mr-2 text-1xl" /> Download
+            {isEditing ? (
+              "Cancel Changes"
+            ) : (
+              <>
+                <FaPen className="inline-block mr-2 text-1xl" />
+                Edit
+              </>
+            )}
           </button>
+
+          {isEditing && (
+            <button
+              onClick={downloadCSV}
+              className=" px-4 py-3 flex flew-row justify-center items-center bg-susyPink hover:bg-susyLightPink rounded-md text-susyNavy relative"
+            >
+              <FiDownload className="inline-block mr-2 text-1xl" /> Save Changes
+            </button>
+          )}
+          {!isEditing && (
+            <button
+              onClick={downloadCSV}
+              className=" px-4 py-3 flex flew-row justify-center items-center bg-susyPink hover:bg-susyLightPink rounded-md text-susyNavy relative"
+            >
+              <FiDownload className="inline-block mr-2 text-1xl" /> Download
+            </button>
+          )}
         </div>
       </div>
       <div className="rounded-lg mt-8  m-0">
@@ -196,124 +247,183 @@ const ListView: React.FC<SelectedListProps> = ({
           <table className="relative min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                {/* Address Column Header */}
                 <th
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy min-w-[350px]  w-[250px] max-w-[350px]"
                   onClick={() => sortList("address")}
                 >
                   <div className="flex">
-                    {" "}
+                    {isEditing && (
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        onChange={(e) => {
+                          const allAddresses = currentItems.map(
+                            (item) => item.address
+                          );
+                          if (e.target.checked) {
+                            setCheckedItems(
+                              new Set([...checkedItems, ...allAddresses])
+                            );
+                          } else {
+                            setCheckedItems(
+                              new Set(
+                                [...checkedItems].filter(
+                                  (addr) => !allAddresses.includes(addr)
+                                )
+                              )
+                            );
+                          }
+                        }}
+                        checked={currentItems.every((item) =>
+                          checkedItems.has(item.address)
+                        )}
+                      />
+                    )}
                     Address
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* Postcode Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("postcode")}
                 >
                   <div className="flex">
-                    {" "}
                     Postcode
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* Home Type Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("homeType")}
                 >
-                  <div className="flex whitespace-nowrap">
-                    {" "}
+                  <div className="flex">
                     Home Type
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* EPC Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("epcEnum")}
                 >
                   <div className="flex">
-                    {" "}
                     EPC
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* Cost to EPC C Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("costToEpcC")}
                 >
-                  <div className="flex whitespace-nowrap">
-                    {" "}
-                    Cost To EPC C
+                  <div className="flex">
+                    Cost to EPC C
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* Central Heating Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("centralHeatingEnum")}
                 >
-                  <div className="flex whitespace-nowrap">
-                    {" "}
+                  <div className="flex">
                     Central Heating
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* Predicted Income Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("predictedIncome")}
                 >
-                  <div className="flex whitespace-nowrap">
-                    {" "}
+                  <div className="flex">
                     Predicted Income
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
+
+                {/* IMD Column Header */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
                   onClick={() => sortList("imd")}
                 >
                   <div className="flex">
-                    {" "}
                     IMD
                     <BiSortAlt2 className="ml-2 w-[16px] h-[16px] -translate-y-[1px]" />
                   </div>
                 </th>
               </tr>
             </thead>
+
             <tbody className="bg-white divide-y divide-gray-200">
               {currentItems.length > 0 ? (
                 currentItems.map((item, index) => (
-                  <tr key={index}>
+                  <tr key={`${item.address}-${item.postcode}-${index}`}>
+                    {/* Address Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 w-[250px] min-w-[350px] max-w-[350px] overflow-hidden">
+                      {isEditing && (
+                        <input
+                          className="mr-4"
+                          type="checkbox"
+                          onChange={(e) =>
+                            handleCheckboxChange(e, item.address)
+                          }
+                          checked={checkedItems.has(item.address)}
+                        />
+                      )}
                       {item.address}
                     </td>
+
+                    {/* Postcode Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.postcode}
                     </td>
+
+                    {/* Home Type Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.homeType}
                     </td>
+
+                    {/* EPC Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.epcEnum}
                     </td>
+
+                    {/* Cost to EPC C Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.costToEpcC === 0
                         ? "NA"
                         : "£" + formatCurrency(item.costToEpcC)}
                     </td>
 
+                    {/* Central Heating Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.centralHeatingEnum}
                     </td>
+
+                    {/* Predicted Income Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {"£" + formatCurrency(item.predictedIncome)}
                     </td>
+
+                    {/* IMD Cell */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.imd}
                     </td>

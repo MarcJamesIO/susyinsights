@@ -6,11 +6,12 @@ import { FiDownload } from "react-icons/fi";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { FiChevronsLeft, FiChevronsRight } from "react-icons/fi";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-
+import { FaCopy } from "react-icons/fa";
 interface List {
+  insightsListFilters: any;
   name: string;
   dateRegister: string;
-  createdBy: string;
+  insightsUser: string;
   size: string;
   id: number;
 }
@@ -103,19 +104,66 @@ export default function Lists({
       setShowLoading(false);
 
       // Sort the data by dateRegister in descending order (latest first)
-      const sortedData = responseData.data
-        .map((list: List) => ({
-          ...list,
-          createdBy: firstNames[Math.floor(Math.random() * firstNames.length)], // Assign random name
-        }))
-        .sort((a: List, b: List) => {
-          if (a.dateRegister < b.dateRegister) return 1;
-          if (a.dateRegister > b.dateRegister) return -1;
-          return 0;
-        });
+      const sortedData = responseData.data.sort((a: List, b: List) => {
+        if (a.dateRegister < b.dateRegister) return 1;
+        if (a.dateRegister > b.dateRegister) return -1;
+        return 0;
+      });
 
       setLists(sortedData);
       setTotalPages(Math.ceil(sortedData.length / resultsPerPage));
+
+      console.log("User lists fetched successfully:", sortedData);
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
+  const handleDuplicateList = async (list: List) => {
+    console.log("Duplicate list", list);
+
+    const url = "https://api-insight.susy.house/api/insights/1/dash/list/";
+
+    const newFilters = list.insightsListFilters.map((filter: any) => {
+      // Make a copy of the filter object and modify the necessary properties
+      return {
+        ...filter,
+        idInsightsList: null,
+        id: null,
+      };
+    });
+
+    const data = {
+      id: null,
+      idZone: 1,
+      idInsightsUser: 1,
+      name: "Copy of " + list.name,
+      size: list.size,
+      insightsListFilters: newFilters,
+    };
+
+    console.log("Duplicating list data. Data being sent:", data);
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.statusText} - ${errorText}`
+        );
+      }
+
+      const responseData = await response.json();
+      console.log("User list duplicated successfully:", responseData);
+      getUserList();
     } catch (error) {
       console.error("There was a problem with the fetch operation:", error);
     }
@@ -168,11 +216,11 @@ export default function Lists({
 
       if (!response.ok) {
         throw new Error("Network response was not ok " + response.statusText);
+      } else {
+        const updatedLists = lists.filter((item) => item.id !== list.id);
       }
-
-      setLists(lists.filter((item) => item.id !== list.id));
     } catch (error) {
-      console.error("There was a problem with the delete operation:", error);
+      console.error("There was a problem with the duplicate operation:", error);
     }
   };
 
@@ -262,7 +310,7 @@ export default function Lists({
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer text-RedHat text-susyNavy"
-                    onClick={() => sortList("createdBy")}
+                    onClick={() => sortList("insightsUser")}
                   >
                     <div className="flex">
                       Created by{" "}
@@ -322,7 +370,7 @@ export default function Lists({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <p className="font-normal text-susyNavy">
-                            {list.createdBy}
+                            {list.insightsUser}
                           </p>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -344,6 +392,12 @@ export default function Lists({
                           >
                             <FaRegTrashAlt className="w-[14px] text-susyNavy" />
                           </a>
+                          <button
+                            onClick={() => handleDuplicateList(list)}
+                            className="ml-4 text-black hover:text-indigo-900"
+                          >
+                            <FaCopy className="w-[18px] text-susyNavy" />
+                          </button>
                         </td>
                       </tr>
                     ))
