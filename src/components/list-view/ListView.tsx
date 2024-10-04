@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FiDownload } from "react-icons/fi";
 import { BiSortAlt2 } from "react-icons/bi";
 import { FiChevronsLeft, FiChevronsRight } from "react-icons/fi";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { FaPen } from "react-icons/fa";
-
+import { FaRegTrashAlt } from "react-icons/fa";
 interface ListItem {
   address: string;
   postcode: string;
@@ -22,12 +22,21 @@ interface SelectedListProps {
   listData: ListItem[];
   singleListInformation: any;
   setShowSingleList: (value: boolean) => void;
+  handleViewList: (list: any) => void;
+  setShowLoading: (value: boolean) => void;
+  viewUserLists?: () => void;
 }
+const getAuthToken = (): string | null => {
+  return localStorage.getItem("token");
+};
 
 const ListView: React.FC<SelectedListProps> = ({
   listData,
   singleListInformation,
-  setShowSingleList,
+
+  handleViewList,
+  setShowLoading,
+  viewUserLists,
 }) => {
   const [pageNumber, setPageNumber] = useState<number>(0);
   const [resultsPerPage, setResultsPerPage] = useState<number>(10);
@@ -36,10 +45,28 @@ const ListView: React.FC<SelectedListProps> = ({
     direction: "ascending" | "descending";
   } | null>(null);
   const [searchInput, setSearchInput] = useState<string>("");
-
-  // New state variables
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [currentListData, setCurrentListData] = useState<ListItem[]>(listData);
+  const [itemsToDelete, setItemsToDelete] = useState<ListItem[]>([]);
+
+  useEffect(() => {
+    setCurrentListData(listData);
+  }, [listData]);
+
+  const handleDelete = () => {
+    const itemsRemoved = currentListData.filter((item) =>
+      checkedItems.has(item.address)
+    );
+    setItemsToDelete([...itemsToDelete, ...itemsRemoved]);
+
+    const updatedList = currentListData.filter(
+      (item) => !checkedItems.has(item.address)
+    );
+    setCurrentListData(updatedList);
+
+    setCheckedItems(new Set());
+  };
 
   const sortList = (key: keyof ListItem) => {
     let direction: "ascending" | "descending" = "ascending";
@@ -53,8 +80,51 @@ const ListView: React.FC<SelectedListProps> = ({
     setSortConfig({ key, direction });
   };
 
+  const handleSaveEdit = async () => {
+    console.log("Editing list");
+
+    const url =
+      "https://api-insight.susy.house/api/insights/1/dash/list/remove-insights-by-list/" +
+      singleListInformation.id;
+
+    // Map the selectedItems to extract susyID and create an array of strings
+    const susyIDArray = itemsToDelete.map((item) => item.susyId);
+
+    console.log("Editing list data. Data being sent:", susyIDArray);
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify(susyIDArray),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.statusText} - ${errorText}`
+        );
+      }
+
+      const responseData = await response.json();
+      setIsEditing(false);
+
+      handleViewList(singleListInformation);
+
+      setTimeout(() => {
+        setShowLoading(false);
+      }, 100);
+      console.log("User list edited successfully:", responseData);
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
   const sortedData = useMemo(() => {
-    let sortableItems = [...listData];
+    let sortableItems = [...currentListData];
     if (sortConfig !== null) {
       const { key, direction } = sortConfig;
       sortableItems.sort((a, b) => {
@@ -74,8 +144,9 @@ const ListView: React.FC<SelectedListProps> = ({
         return 0;
       });
     }
+    console.log(sortableItems);
     return sortableItems;
-  }, [listData, sortConfig]);
+  }, [currentListData, sortConfig]);
 
   const filteredData = useMemo(() => {
     if (!searchInput) return sortedData;
@@ -110,6 +181,15 @@ const ListView: React.FC<SelectedListProps> = ({
 
   const handleLastPage = () => {
     setPageNumber(totalPages - 1);
+  };
+
+  const toggleEditing = () => {
+    if (isEditing) {
+      setCurrentListData(listData);
+      setItemsToDelete([]);
+      setCheckedItems(new Set());
+    }
+    setIsEditing(!isEditing);
   };
 
   const handleResultsPerPageChange = (
@@ -175,15 +255,18 @@ const ListView: React.FC<SelectedListProps> = ({
     });
   };
 
-  // Get selected items
   const selectedItems = useMemo(() => {
-    return listData.filter((item) => checkedItems.has(item.address));
-  }, [checkedItems, listData]);
+    return currentListData.filter((item) => checkedItems.has(item.address));
+  }, [checkedItems, currentListData]);
+
+  useEffect(() => {
+    setShowLoading(false);
+  }, []);
 
   return (
     <div className="pb-60">
       <div className="text-susyNavy font-light">
-        <button onClick={() => setShowSingleList(false)} className="">
+        <button onClick={viewUserLists} className="">
           <h1 className="text-RedHat font-medium text-susyNavy border-b-2 border-susyNavy">
             My lists
           </h1>
@@ -211,7 +294,7 @@ const ListView: React.FC<SelectedListProps> = ({
         </div>
         <div className="text-black flex flex-row ">
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => toggleEditing()}
             className=" px-4 py-3 flex flew-row justify-center items-center bg-white border-susyPink border-2 mr-4 hover:bg-gray-100 rounded-md text-susyNavy relative"
           >
             {isEditing ? (
@@ -226,7 +309,7 @@ const ListView: React.FC<SelectedListProps> = ({
 
           {isEditing && (
             <button
-              onClick={downloadCSV}
+              onClick={handleSaveEdit}
               className=" px-4 py-3 flex flew-row justify-center items-center bg-susyPink hover:bg-susyLightPink rounded-md text-susyNavy relative"
             >
               <FiDownload className="inline-block mr-2 text-1xl" /> Save Changes
@@ -242,6 +325,20 @@ const ListView: React.FC<SelectedListProps> = ({
           )}
         </div>
       </div>
+      {isEditing && (
+        <div className="w-full bg-susyLightBlue rounded-sm text-susyNavy p-4 mt-8 flex items-center justify-between">
+          <p className="text-sm font-medium">
+            {" "}
+            {selectedItems.length} items selected
+          </p>
+          <button
+            onClick={handleDelete}
+            className="text-sm font-medium flex items-center"
+          >
+            <p className="mr-2">Delete</p> <FaRegTrashAlt className="w-5 h-5" />
+          </button>
+        </div>
+      )}
       <div className="rounded-lg mt-8  m-0">
         <div className="relative min-w-full border border-gray-200 rounded-md h-full max-h-[500px] overflow-y-scroll">
           <table className="relative min-w-full divide-y divide-gray-200">

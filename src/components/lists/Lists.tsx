@@ -73,7 +73,7 @@ export default function Lists({
   }, []);
 
   useEffect(() => {
-    setShowLoading(false);
+    setShowLoading(true);
   }, [showSingleList]);
 
   useEffect(() => {
@@ -82,6 +82,14 @@ export default function Lists({
 
   const getAuthToken = (): string | null => {
     return localStorage.getItem("token");
+  };
+
+  const viewUserLists = () => {
+    console.log("Viewing user lists");
+    setShowSingleList(false);
+    setTimeout(() => {
+      setShowLoading(false);
+    }, 500);
   };
 
   const getUserList = async () => {
@@ -101,9 +109,7 @@ export default function Lists({
       }
 
       const responseData = await response.json();
-      setShowLoading(false);
 
-      // Sort the data by dateRegister in descending order (latest first)
       const sortedData = responseData.data.sort((a: List, b: List) => {
         if (a.dateRegister < b.dateRegister) return 1;
         if (a.dateRegister > b.dateRegister) return -1;
@@ -114,6 +120,7 @@ export default function Lists({
       setTotalPages(Math.ceil(sortedData.length / resultsPerPage));
 
       console.log("User lists fetched successfully:", sortedData);
+      setShowLoading(false);
     } catch (error) {
       console.error("There was a problem with the fetch operation:", error);
     }
@@ -494,6 +501,9 @@ export default function Lists({
           listData={singleListData}
           singleListInformation={singleListInformation}
           setShowSingleList={setShowSingleList}
+          handleViewList={handleViewList}
+          setShowLoading={setShowLoading}
+          viewUserLists={viewUserLists}
         />
       )}
     </div>
