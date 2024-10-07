@@ -73,10 +73,6 @@ export default function Lists({
   }, []);
 
   useEffect(() => {
-    setShowLoading(true);
-  }, [showSingleList]);
-
-  useEffect(() => {
     getUserList();
   }, [resultsPerPage]);
 
