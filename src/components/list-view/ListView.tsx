@@ -128,7 +128,7 @@ const ListView: React.FC<SelectedListProps> = ({
 
       setTimeout(() => {
         setShowLoading(false);
-      }, 100);
+      }, 1000);
       console.log("User list edited successfully:", responseData);
     } catch (error) {
       console.error("There was a problem with the fetch operation:", error);
