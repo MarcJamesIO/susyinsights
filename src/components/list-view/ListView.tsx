@@ -18,6 +18,15 @@ interface ListItem {
   [key: string]: any;
 }
 
+interface List {
+  insightsListFilters: any;
+  name: string;
+  dateRegister: string;
+  insightsUser: string;
+  size: string;
+  id: number;
+}
+
 interface SelectedListProps {
   listData: ListItem[];
   singleListInformation: any;
@@ -45,7 +54,10 @@ const ListView: React.FC<SelectedListProps> = ({
     direction: "ascending" | "descending";
   } | null>(null);
   const [searchInput, setSearchInput] = useState<string>("");
+  const [nameInput, setNameInput] = useState<string>("");
+  const [nameText, setNameText] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [currentListData, setCurrentListData] = useState<ListItem[]>(listData);
   const [itemsToDelete, setItemsToDelete] = useState<ListItem[]>([]);
@@ -192,6 +204,44 @@ const ListView: React.FC<SelectedListProps> = ({
     setIsEditing(!isEditing);
   };
 
+  const handleReSaveList = async () => {
+    console.log("Resaving list", singleListInformation.name);
+
+    const url = "https://api-insight.susy.house/api/insights/1/dash/list/";
+
+    const data = {
+      id: null,
+      idZone: 1,
+      idInsightsUser: 1,
+      name: nameText,
+      size: sortedData.length,
+      insightsListFilters: singleListInformation.insightsListFilters,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.statusText} - ${errorText}`
+        );
+      }
+
+      const responseData = await response.json();
+      console.log("User list re-saved successfully:", responseData);
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
   const handleResultsPerPageChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -255,6 +305,10 @@ const ListView: React.FC<SelectedListProps> = ({
     });
   };
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(e.target.value);
+  };
+
   const selectedItems = useMemo(() => {
     return currentListData.filter((item) => checkedItems.has(item.address));
   }, [checkedItems, currentListData]);
@@ -273,9 +327,37 @@ const ListView: React.FC<SelectedListProps> = ({
         </button>{" "}
         &gt; {singleListInformation.name}
       </div>
-      <h1 className="font-medium text-[32px] font-SusyFont text-susyNavy mt-8 mb-8">
-        List: {singleListInformation.name} ({singleListInformation.size})
-      </h1>
+      <div className="text-susyNavy flex  mt-8 mb-8">
+        <div className="relative flex">
+          {" "}
+          <h1 className="font-medium text-[32px] font-SusyFont text-susyNavy">
+            List: {singleListInformation.name} ({singleListInformation.size})
+          </h1>
+          {isEditingName && (
+            <div className="flex absolute top-1/2 -translate-y-1/2">
+              <input
+                type="text"
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder={singleListInformation.name}
+                className="top-0 border border-susyNavy px-8 rounded-md w-max font-medium text-[32px] font-SusyFont text-susyNavy"
+              />
+              <button className=" px-4 flex flex-row justify-center items-center ml-2 bg-susyPink hover:bg-susyLightPink rounded-md text-susyNavy">
+                Save
+              </button>
+              <button
+                onClick={() => setIsEditingName(false)}
+                className=" px-4 flex flex-row justify-center items-center ml-2 bg-susyPink hover:bg-susyLightPink rounded-md text-susyNavy"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+
+        <button className="ml-4 text-lg" onClick={() => setIsEditingName(true)}>
+          <FaPen />
+        </button>
+      </div>
 
       <div className="w-full flex justify-between items-end">
         <div className="text-black ">
